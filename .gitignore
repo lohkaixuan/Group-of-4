@@ -1,0 +1,17 @@
+For flutter: 
+
+Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+pubspec.lock
+
+For Node.js backend (inside backend): 
+
+Node.js
+backend/node_modules/
+backend/.env
+Group-of-4\.gitignore
+.env
