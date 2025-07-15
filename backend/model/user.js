@@ -1,29 +1,19 @@
+// models/User.js
 const db = require('../helpers/dbHelper');
 
 class User {
-  constructor({
-    user_id,
-    name,
-    ic_number,
-    email,
-    phone,
-    password,
-    role,
-    ic_photo,
-    created_at
-  }) {
+  constructor({ user_id, name, ic_number, email, phone, password, role, ic_photo, created_at }) {
     this.user_id = user_id;
     this.name = name;
     this.ic_number = ic_number;
     this.email = email;
     this.phone = phone;
     this.password = password;
-    this.role = role || 'user';
+    this.role = role;
     this.ic_photo = ic_photo;
-    this.created_at = created_at ? new Date(created_at) : null;
+    this.created_at = created_at;
   }
 
-  /** Return only safe/public fields */
   toJSON() {
     return {
       user_id: this.user_id,
@@ -36,8 +26,6 @@ class User {
       created_at: this.created_at
     };
   }
-
-  // ======================= STATIC METHODS =======================
 
   static async findByEmail(email) {
     const rows = await db.find('users', { email });
@@ -54,17 +42,8 @@ class User {
     return rows.length ? new User(rows[0]) : null;
   }
 
-  static async create({ user_id, name, ic_number, email, phone, password, ic_photo }) {
-    const row = await db.insert('users', {
-      user_id,
-      name,
-      ic_number,
-      email,
-      phone,
-      password,
-      role: 'user',
-      ic_photo: ic_photo || null
-    });
+  static async create(data) {
+    const row = await db.insert('users', data);
     return new User(row);
   }
 }

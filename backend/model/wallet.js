@@ -1,4 +1,3 @@
-// models/walletModel.js
 const db = require('../helpers/dbHelper');
 
 class Wallet {
