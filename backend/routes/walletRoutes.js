@@ -1,7 +1,7 @@
 // routes/walletRoutes.js
 const express = require('express');
 const router = express.Router();
-const walletCtrl = require('../controllers/walletController');
+const walletCtrl = require('./controllers/walletController');
 
 // GET balance for a specific wallet type (query: ?wallet_type=personal/merchant)
 router.get('/:user_id/balance', walletCtrl.getBalance);
