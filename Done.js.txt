@@ -1,0 +1,154 @@
+const fs = require('fs');
+const crypto = require('crypto');
+const readline = require('readline');
+
+function pause(message = 'Press ENTER to exit...') {
+    return new Promise((resolve) => {
+        const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout,
+        });
+        rl.question(message, () => {
+            rl.close();
+            resolve();
+        });
+    });
+}
+
+async function loadKeys() {
+    try {
+        const certPath = 'C:\\pathto\\client1.crt';
+        const keyPath = 'C:\\pathto\\client1.key';
+
+        // Read certificate (contains public key)
+        const certPem = fs.readFileSync(certPath, 'utf8');
+        const publicKey = crypto.createPublicKey(certPem);
+
+        // Read private key
+        const keyPem = fs.readFileSync(keyPath, 'utf8');
+        const privateKey = crypto.createPrivateKey({
+            key: keyPem,
+            format: 'pem',
+        });
+
+        return { publicKey, privateKey };
+    } catch (error) {
+        console.error("❌ Error loading keys:", error.message);
+        await pause();
+        process.exit(1);
+    }
+}
+
+function encrypt(publicKey, data) {
+    try {
+        return crypto.publicEncrypt(
+            {
+                key: publicKey,
+                padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+                oaepHash: 'sha256',
+            },
+            data
+        );
+    } catch (error) {
+        console.error("❌ Error during encryption:", error.message);
+        return null;
+    }
+}
+
+function decrypt(privateKey, encryptedData) {
+    try {
+        return crypto.privateDecrypt(
+            {
+                key: privateKey,
+                padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+                oaepHash: 'sha256',
+            },
+            encryptedData
+        );
+    } catch (error) {
+        console.error("❌ Error during decryption:", error.message);
+        return null;
+    }
+}
+
+function getJsonData() {
+    return {
+        Merchant: "Alice",
+        Customer: "Ben",
+        price: 20.00,
+        id: 123456
+
+    };
+}
+/*
+
+async function main() {
+    try {
+        const { publicKey, privateKey } = await loadKeys();
+
+        const plaintext = 'Hello RSA123 Encryption!';
+        console.log('Original text:', plaintext);
+
+        // Encrypt
+        const encrypted = encrypt(publicKey, Buffer.from(plaintext, 'utf8'));
+        if (!encrypted) {
+            await pause();
+            process.exit(1);
+        }
+        console.log('Encrypted (base64):', encrypted.toString('base64'));
+
+        // Decrypt
+        const decrypted = decrypt(privateKey, encrypted);
+        if (!decrypted) {
+            await pause();
+            process.exit(1);
+        }
+        console.log('Decrypted text:', decrypted.toString('utf8'));
+    } catch (error) {
+        console.error("❌ Unexpected error:", error.message);
+    }
+
+    await pause();
+}*/
+
+async function main() {
+    try {
+        const { publicKey, privateKey } = await loadKeys();
+
+        // Get your JSON object
+        const jsonData = getJsonData();
+        console.log("Original JSON object:", jsonData);
+
+        // Convert JSON to string
+        const jsonString = JSON.stringify(jsonData);
+        console.log("JSON string to encrypt:", jsonString);
+
+        // Encrypt
+        const encrypted = encrypt(publicKey, Buffer.from(jsonString, 'utf8'));
+        if (!encrypted) {
+            await pause();
+            process.exit(1);
+        }
+        console.log('Encrypted (base64):', encrypted.toString('base64'));
+
+        // Decrypt
+        const decrypted = decrypt(privateKey, encrypted);
+        if (!decrypted) {
+            await pause();
+            process.exit(1);
+        }
+        const decryptedString = decrypted.toString('utf8');
+        console.log('Decrypted JSON string:', decryptedString);
+
+        // Convert decrypted string back to JSON object
+        const decryptedJson = JSON.parse(decryptedString);
+        console.log('Decrypted JSON object:', decryptedJson);
+
+    } catch (error) {
+        console.error("❌ Unexpected error:", error.message);
+    }
+
+    await pause();
+}
+
+main();
