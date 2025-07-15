@@ -1,5 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
-const Wallet = require('../models/walletModel');
+const Wallet = require('../model/wallet');
 const { success, fail, error } = require('../helpers/responseHelper');
 
 // ✅ Get balance (specify wallet_type)
