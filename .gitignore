@@ -1,6 +1,6 @@
-For flutter: 
-
-Flutter/Dart
+# =======================
+# Flutter / Dart
+# =======================
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
@@ -8,10 +8,21 @@ Flutter/Dart
 build/
 pubspec.lock
 
-For Node.js backend (inside backend): 
+# =======================
+# Node.js backend (server folder)
+# =======================
+server/node_modules/
+server/.env
+server/config/serviceAccountKey.json
 
-Node.js
-backend/node_modules/
-backend/.env
-Group-of-4\.gitignore
+# =======================
+# General environment and logs
+# =======================
 .env
+*.log
+logs/
+
+# =======================
+# Optional: local configs
+# =======================
+config/*.local.js
