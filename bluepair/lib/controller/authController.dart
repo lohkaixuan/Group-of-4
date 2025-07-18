@@ -10,11 +10,26 @@ class AuthController extends GetxController {
   final Storage storage = Storage();
   final ApiService api = ApiService();
 
+  // 🔄 State
   var isLoading = false.obs;
   var isEmailLogin = true.obs;
 
+  // 📌 Reactive user details for Obx
+  Rx<Map<String, dynamic>?> userDetails = Rx<Map<String, dynamic>?>(null);
+
+  // 📎 Picked files
   File? icPhoto;
   File? ssmCertificate;
+
+  /// 🔹 Load user from storage (call in SplashScreen or after login)
+  Future<void> loadUserFromStorage() async {
+    try {
+      final data = await storage.getUserDetails();
+      userDetails.value = data;
+    } catch (e) {
+      userDetails.value = null;
+    }
+  }
 
   /// 📷 Pick IC photo (images only)
   Future<void> pickIcPhoto() async {
@@ -25,7 +40,7 @@ class AuthController extends GetxController {
     );
     if (picked != null) {
       icPhoto = File(picked.path);
-      update();
+      update(); // for GetBuilder if used
       Get.snackbar('Selected', 'IC photo selected');
     } else {
       Get.snackbar('Cancelled', 'No IC photo selected');
@@ -47,7 +62,7 @@ class AuthController extends GetxController {
     }
   }
 
-  /// 👤 Register user
+  /// 👤 Register User
   Future<void> registerUser({
     required String name,
     required String email,
@@ -74,6 +89,8 @@ class AuthController extends GetxController {
       );
 
       await storage.saveUserDetails(user.toJson());
+      userDetails.value = user.toJson(); // ✅ reactive update
+
       Get.snackbar('Success', 'User registered');
       Get.offAllNamed('/home');
     } catch (e) {
@@ -83,16 +100,16 @@ class AuthController extends GetxController {
     }
   }
 
-  /// 🏪 Register merchant
+  /// 🏪 Register Merchant
   Future<void> registerMerchant({
     required String name,
     required String email,
     required String phone,
     required String icNumber,
     required String pin,
-    required String businessName, // ✅ added
-    required String businessType, // ✅ added
-    required String categoryService, // ✅ added
+    required String businessName,
+    required String businessType,
+    required String categoryService,
   }) async {
     if (icPhoto == null) {
       Get.snackbar("Error", "IC photo is required");
@@ -113,12 +130,14 @@ class AuthController extends GetxController {
         icNumber: icNumber,
         icPhoto: icPhoto!,
         ssmCertificate: ssmCertificate!,
-        businessName: businessName, // ✅ pass business name
-        businessType: businessType, // ✅ pass business type
-        categoryService: categoryService, // ✅ pass category service
+        businessName: businessName,
+        businessType: businessType,
+        categoryService: categoryService,
       );
 
       await storage.saveUserDetails(user.toJson());
+      userDetails.value = user.toJson(); // ✅ reactive update
+
       Get.snackbar('Success', 'Merchant registration sent for approval');
       Get.offAllNamed('/home');
     } catch (e) {
@@ -149,6 +168,7 @@ class AuthController extends GetxController {
 
       await storage.saveAuthToken(token);
       await storage.saveUserDetails(user);
+      userDetails.value = user; // ✅ reactive update
 
       Get.snackbar('Success', 'Login successful');
       Get.offAllNamed('/home');
@@ -162,6 +182,7 @@ class AuthController extends GetxController {
   /// 🚪 Logout
   Future<void> logout() async {
     await storage.clearAll();
+    userDetails.value = null; // ✅ reactive clear
     Get.offAllNamed('/login');
   }
 
@@ -169,7 +190,6 @@ class AuthController extends GetxController {
   Future<bool> checkToken() async {
     try {
       final token = await storage.getAuthToken();
-      // You can add extra logic here like validating expiry if needed
       return token != null && token.isNotEmpty;
     } catch (e) {
       return false;

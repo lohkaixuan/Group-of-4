@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:bluepair/controller/authController.dart';
+import 'package:bluepair/controller/langaugeController.dart';
+import 'package:bluepair/widgets/common_appbar.dart'; // ✅ your common app bar
 
 class RegisterUserPage extends StatelessWidget {
   RegisterUserPage({Key? key}) : super(key: key);
 
   final auth = Get.find<AuthController>();
+  final lang = Get.find<LanguageController>();
 
-  // ✅ All fields with their own controller in the same map
+  // ✅ fields with both English and BM labels
   final List<Map<String, dynamic>> fields = [
-    {'label': 'Name', 'icon': Icons.person, 'keyboard': TextInputType.text, 'controller': TextEditingController()},
-    {'label': 'Email', 'icon': Icons.email, 'keyboard': TextInputType.emailAddress, 'controller': TextEditingController()},
-    {'label': 'Phone', 'icon': Icons.phone, 'keyboard': TextInputType.phone, 'controller': TextEditingController()},
-    {'label': 'IC Number', 'icon': Icons.badge, 'keyboard': TextInputType.text, 'controller': TextEditingController()},
-    {'label': '6-Digit PIN', 'icon': Icons.lock, 'keyboard': TextInputType.number, 'controller': TextEditingController(), 'maxLength': 6, 'obscure': true},
+    {'labelEn': 'Name', 'labelBm': 'Nama', 'icon': Icons.person, 'keyboard': TextInputType.text, 'controller': TextEditingController()},
+    {'labelEn': 'Email', 'labelBm': 'Emel', 'icon': Icons.email, 'keyboard': TextInputType.emailAddress, 'controller': TextEditingController()},
+    {'labelEn': 'Phone', 'labelBm': 'Telefon', 'icon': Icons.phone, 'keyboard': TextInputType.phone, 'controller': TextEditingController()},
+    {'labelEn': 'IC Number', 'labelBm': 'Nombor IC', 'icon': Icons.badge, 'keyboard': TextInputType.text, 'controller': TextEditingController()},
+    {'labelEn': '6-Digit PIN', 'labelBm': 'PIN 6-Digit', 'icon': Icons.lock, 'keyboard': TextInputType.number, 'controller': TextEditingController(), 'maxLength': 6, 'obscure': true},
   ];
 
   void _handleRegister() {
@@ -24,19 +27,19 @@ class RegisterUserPage extends StatelessWidget {
     final pin = fields[4]['controller'].text.trim();
 
     if ([name, email, phone, ic, pin].any((e) => e.isEmpty)) {
-      Get.snackbar('Error', 'All fields are required');
+      Get.snackbar(lang.t('Error', 'Ralat'), lang.t('All fields are required', 'Semua medan diperlukan'));
       return;
     }
     if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email)) {
-      Get.snackbar('Error', 'Invalid email');
+      Get.snackbar(lang.t('Error', 'Ralat'), lang.t('Invalid email', 'Emel tidak sah'));
       return;
     }
     if (!RegExp(r'^[0-9]+$').hasMatch(phone)) {
-      Get.snackbar('Error', 'Phone must be digits only');
+      Get.snackbar(lang.t('Error', 'Ralat'), lang.t('Phone must be digits only', 'Telefon mesti nombor sahaja'));
       return;
     }
     if (pin.length != 6 || int.tryParse(pin) == null) {
-      Get.snackbar('Error', 'PIN must be exactly 6 digits');
+      Get.snackbar(lang.t('Error', 'Ralat'), lang.t('PIN must be exactly 6 digits', 'PIN mestilah 6 digit'));
       return;
     }
 
@@ -52,12 +55,13 @@ class RegisterUserPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Register User')),
+      appBar: buildCommonAppBar("Register User", "Daftar Pengguna"),
       body: Obx(() {
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
+              // 🔹 dynamically build all fields
               ...fields.map((f) {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 16.0),
@@ -67,7 +71,7 @@ class RegisterUserPage extends StatelessWidget {
                     obscureText: (f['obscure'] as bool?) ?? false,
                     maxLength: (f['maxLength'] as int?) ?? null,
                     decoration: InputDecoration(
-                      labelText: f['label'] as String,
+                      labelText: lang.t(f['labelEn'] as String, f['labelBm'] as String),
                       prefixIcon: Icon(f['icon'] as IconData),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       counterText: "",
@@ -75,17 +79,20 @@ class RegisterUserPage extends StatelessWidget {
                   ),
                 );
               }).toList(),
+
               const SizedBox(height: 8),
+
               ElevatedButton(
                 onPressed: auth.pickIcPhoto,
-                child: const Text('Pick IC Photo'),
+                child: Text(lang.t('Pick IC Photo', 'Pilih Gambar IC')),
               ),
               const SizedBox(height: 24),
+
               ElevatedButton(
                 onPressed: auth.isLoading.value ? null : _handleRegister,
                 child: auth.isLoading.value
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Register User'),
+                    : Text(lang.t('Register User', 'Daftar Pengguna')),
               ),
             ],
           ),

@@ -1,5 +1,6 @@
 import 'package:bluepair/bottom_nav/bottom_nav_controller.dart';
 import 'package:bluepair/controller/homeController.dart';
+import 'package:bluepair/controller/langaugeController.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'controller/authController.dart';
@@ -7,6 +8,7 @@ import 'route/page.dart'; // <-- import your AppRoutes file
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  Get.put(LanguageController());
   Get.put(AuthController()); // register controller
   Get.put(BottomNavController()); 
   Get.put(HomeController());

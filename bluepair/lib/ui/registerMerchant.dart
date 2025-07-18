@@ -1,24 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../controller/authController.dart';
+import 'package:bluepair/controller/authController.dart';
+import 'package:bluepair/controller/langaugeController.dart';
+import 'package:bluepair/widgets/common_appbar.dart'; // ✅ import your buildCommonAppBar
 
 class RegisterMerchantPage extends StatelessWidget {
   RegisterMerchantPage({super.key});
 
   final auth = Get.find<AuthController>();
+  final lang = Get.find<LanguageController>();
 
   // ✅ All text fields with their own controller in the same map
   final List<Map<String, dynamic>> fields = [
-    {'label': 'Name', 'icon': Icons.person, 'keyboard': TextInputType.text, 'controller': TextEditingController()},
-    {'label': 'Email', 'icon': Icons.email, 'keyboard': TextInputType.emailAddress, 'controller': TextEditingController()},
-    {'label': 'Phone', 'icon': Icons.phone, 'keyboard': TextInputType.phone, 'controller': TextEditingController()},
-    {'label': 'IC Number', 'icon': Icons.badge, 'keyboard': TextInputType.text, 'controller': TextEditingController()},
-    {'label': '6-Digit PIN', 'icon': Icons.lock, 'keyboard': TextInputType.number, 'controller': TextEditingController(), 'maxLength': 6, 'obscure': true},
-    {'label': 'Business Name', 'icon': Icons.store_mall_directory, 'keyboard': TextInputType.text, 'controller': TextEditingController()},
+    {'labelEn': 'Name', 'labelBm': 'Nama', 'icon': Icons.person, 'keyboard': TextInputType.text, 'controller': TextEditingController()},
+    {'labelEn': 'Email', 'labelBm': 'Emel', 'icon': Icons.email, 'keyboard': TextInputType.emailAddress, 'controller': TextEditingController()},
+    {'labelEn': 'Phone', 'labelBm': 'Telefon', 'icon': Icons.phone, 'keyboard': TextInputType.phone, 'controller': TextEditingController()},
+    {'labelEn': 'IC Number', 'labelBm': 'Nombor IC', 'icon': Icons.badge, 'keyboard': TextInputType.text, 'controller': TextEditingController()},
+    {'labelEn': '6-Digit PIN', 'labelBm': 'PIN 6-Digit', 'icon': Icons.lock, 'keyboard': TextInputType.number, 'controller': TextEditingController(), 'maxLength': 6, 'obscure': true},
+    {'labelEn': 'Business Name', 'labelBm': 'Nama Perniagaan', 'icon': Icons.store_mall_directory, 'keyboard': TextInputType.text, 'controller': TextEditingController()},
   ];
 
-  final List<String> businessTypes = ['Micro', 'Small', 'Medium', 'Personal'];
-  final List<String> categoryServices = ['F&B', 'Retail', 'Logistics', 'Medical', 'Entertainment'];
+  final List<Map<String, String>> businessTypes = [
+    {'en': 'Micro', 'bm': 'Mikro'},
+    {'en': 'Small', 'bm': 'Kecil'},
+    {'en': 'Medium', 'bm': 'Sederhana'},
+    {'en': 'Personal', 'bm': 'Peribadi'},
+  ];
+
+  final List<Map<String, String>> categoryServices = [
+    {'en': 'F&B', 'bm': 'Makanan & Minuman'},
+    {'en': 'Retail', 'bm': 'Runcit'},
+    {'en': 'Logistics', 'bm': 'Logistik'},
+    {'en': 'Medical', 'bm': 'Perubatan'},
+    {'en': 'Entertainment', 'bm': 'Hiburan'},
+  ];
 
   // ✅ obs for dropdowns
   final RxString selectedBusinessType = 'Micro'.obs;
@@ -33,19 +48,19 @@ class RegisterMerchantPage extends StatelessWidget {
     final businessName = fields[5]['controller'].text.trim();
 
     if ([name, email, phone, ic, pin, businessName].any((e) => e.isEmpty)) {
-      Get.snackbar('Error', 'All fields are required');
+      Get.snackbar(lang.t('Error', 'Ralat'), lang.t('All fields are required', 'Semua medan diperlukan'));
       return;
     }
     if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email)) {
-      Get.snackbar('Error', 'Invalid email');
+      Get.snackbar(lang.t('Error', 'Ralat'), lang.t('Invalid email', 'Emel tidak sah'));
       return;
     }
     if (!RegExp(r'^[0-9]+$').hasMatch(phone)) {
-      Get.snackbar('Error', 'Phone must be digits only');
+      Get.snackbar(lang.t('Error', 'Ralat'), lang.t('Phone must be digits only', 'Nombor telefon mesti nombor sahaja'));
       return;
     }
     if (pin.length != 6 || int.tryParse(pin) == null) {
-      Get.snackbar('Error', 'PIN must be exactly 6 digits');
+      Get.snackbar(lang.t('Error', 'Ralat'), lang.t('PIN must be exactly 6 digits', 'PIN mestilah 6 digit'));
       return;
     }
 
@@ -64,7 +79,7 @@ class RegisterMerchantPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Register Merchant")),
+      appBar: buildCommonAppBar("Register Merchant", "Daftar Peniaga"),
       body: Obx(() {
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -80,7 +95,7 @@ class RegisterMerchantPage extends StatelessWidget {
                     obscureText: (f['obscure'] as bool?) ?? false,
                     maxLength: (f['maxLength'] as int?) ?? null,
                     decoration: InputDecoration(
-                      labelText: f['label'] as String,
+                      labelText: lang.t(f['labelEn'] as String, f['labelBm'] as String),
                       prefixIcon: Icon(f['icon'] as IconData),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -98,12 +113,15 @@ class RegisterMerchantPage extends StatelessWidget {
                   return DropdownButtonFormField<String>(
                     value: selectedBusinessType.value,
                     decoration: InputDecoration(
-                      labelText: 'Business Type',
+                      labelText: lang.t('Business Type', 'Jenis Perniagaan'),
                       prefixIcon: const Icon(Icons.store),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     items: businessTypes.map((type) {
-                      return DropdownMenuItem(value: type, child: Text(type));
+                      return DropdownMenuItem(
+                        value: type['en'],
+                        child: Text(lang.t(type['en']!, type['bm']!)),
+                      );
                     }).toList(),
                     onChanged: (value) {
                       if (value != null) selectedBusinessType.value = value;
@@ -119,12 +137,15 @@ class RegisterMerchantPage extends StatelessWidget {
                   return DropdownButtonFormField<String>(
                     value: selectedCategoryService.value,
                     decoration: InputDecoration(
-                      labelText: 'Category Service',
+                      labelText: lang.t('Category Service', 'Kategori Perkhidmatan'),
                       prefixIcon: const Icon(Icons.category),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     items: categoryServices.map((service) {
-                      return DropdownMenuItem(value: service, child: Text(service));
+                      return DropdownMenuItem(
+                        value: service['en'],
+                        child: Text(lang.t(service['en']!, service['bm']!)),
+                      );
                     }).toList(),
                     onChanged: (value) {
                       if (value != null) selectedCategoryService.value = value;
@@ -135,19 +156,19 @@ class RegisterMerchantPage extends StatelessWidget {
 
               ElevatedButton(
                 onPressed: auth.pickIcPhoto,
-                child: const Text("Pick IC Photo"),
+                child: Text(lang.t("Pick IC Photo", "Pilih Gambar IC")),
               ),
               const SizedBox(height: 8),
               ElevatedButton(
                 onPressed: auth.pickSsmCertificate,
-                child: const Text("Pick SSM Certificate (PDF)"),
+                child: Text(lang.t("Pick SSM Certificate (PDF)", "Pilih Sijil SSM (PDF)")),
               ),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: auth.isLoading.value ? null : _handleRegister,
                 child: auth.isLoading.value
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Register Merchant"),
+                    : Text(lang.t("Register Merchant", "Daftar Peniaga")),
               ),
             ],
           ),

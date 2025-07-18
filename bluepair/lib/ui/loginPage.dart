@@ -1,17 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:bluepair/controller/authController.dart';
+import 'package:bluepair/controller/langaugeController.dart';
+import 'package:bluepair/widgets/common_appbar.dart';
 
 class LoginPage extends StatelessWidget {
   LoginPage({Key? key}) : super(key: key);
 
   final auth = Get.find<AuthController>();
+  final lang = Get.find<LanguageController>();
 
   // ✅ All fields with embedded controllers
   final List<Map<String, dynamic>> fields = [
-    {'label': 'Email', 'icon': Icons.email, 'keyboard': TextInputType.emailAddress, 'controller': TextEditingController()},
-    {'label': 'Phone Number', 'icon': Icons.phone, 'keyboard': TextInputType.number, 'controller': TextEditingController()},
-    {'label': '6-Digit PIN', 'icon': Icons.lock, 'keyboard': TextInputType.number, 'controller': TextEditingController(), 'maxLength': 6, 'obscure': true},
+    {
+      'label_en': 'Email',
+      'label_bm': 'Emel',
+      'icon': Icons.email,
+      'keyboard': TextInputType.emailAddress,
+      'controller': TextEditingController()
+    },
+    {
+      'label_en': 'Phone Number',
+      'label_bm': 'Nombor Telefon',
+      'icon': Icons.phone,
+      'keyboard': TextInputType.number,
+      'controller': TextEditingController()
+    },
+    {
+      'label_en': '6-Digit PIN',
+      'label_bm': 'PIN 6-Digit',
+      'icon': Icons.lock,
+      'keyboard': TextInputType.number,
+      'controller': TextEditingController(),
+      'maxLength': 6,
+      'obscure': true
+    },
   ];
 
   void _handleLogin() {
@@ -21,18 +44,18 @@ class LoginPage extends StatelessWidget {
 
     if (auth.isEmailLogin.value) {
       if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email)) {
-        Get.snackbar('Error', 'Please enter a valid email');
+        Get.snackbar('Error', lang.t("Please enter a valid email", "Sila masukkan emel yang sah"));
         return;
       }
     } else {
       if (!RegExp(r'^[0-9]+$').hasMatch(phone) || phone.isEmpty) {
-        Get.snackbar('Error', 'Phone number must contain digits only');
+        Get.snackbar('Error', lang.t("Phone number must contain digits only", "Nombor telefon mesti angka sahaja"));
         return;
       }
     }
 
     if (pin.length != 6 || int.tryParse(pin) == null) {
-      Get.snackbar('Error', 'PIN must be exactly 6 digits');
+      Get.snackbar('Error', lang.t("PIN must be exactly 6 digits", "PIN mesti tepat 6 digit"));
       return;
     }
 
@@ -46,6 +69,7 @@ class LoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar:  buildCommonAppBar("Login", "Log Masuk"),
       backgroundColor: Colors.blue.shade50,
       body: SafeArea(
         child: Center(
@@ -60,9 +84,9 @@ class LoginPage extends StatelessWidget {
                   return Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
-                        'BluePair',
-                        style: TextStyle(
+                      Text(
+                        lang.t("BluePair", "BluePair"),
+                        style: const TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
                           color: Colors.blue,
@@ -75,13 +99,13 @@ class LoginPage extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           ChoiceChip(
-                            label: const Text('Email'),
+                            label: Text(lang.t("Email", "Emel")),
                             selected: auth.isEmailLogin.value,
                             onSelected: (_) => auth.isEmailLogin.value = true,
                           ),
                           const SizedBox(width: 8),
                           ChoiceChip(
-                            label: const Text('Phone'),
+                            label: Text(lang.t("Phone", "Telefon")),
                             selected: !auth.isEmailLogin.value,
                             onSelected: (_) => auth.isEmailLogin.value = false,
                           ),
@@ -90,18 +114,14 @@ class LoginPage extends StatelessWidget {
                       const SizedBox(height: 24),
 
                       // 📋 Build fields dynamically
-                      // Show email field if isEmailLogin, else show phone field
-                      ...(auth.isEmailLogin.value
-                              ? [fields[0]]
-                              : [fields[1]])
-                          .map((f) {
+                      ...(auth.isEmailLogin.value ? [fields[0]] : [fields[1]]).map((f) {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: TextField(
                             controller: f['controller'] as TextEditingController,
                             keyboardType: f['keyboard'] as TextInputType,
                             decoration: InputDecoration(
-                              labelText: f['label'] as String,
+                              labelText: lang.t(f['label_en'], f['label_bm']),
                               prefixIcon: Icon(f['icon'] as IconData),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                             ),
@@ -109,7 +129,7 @@ class LoginPage extends StatelessWidget {
                         );
                       }).toList(),
 
-                      // PIN field (always visible)
+                      // PIN field
                       Padding(
                         padding: const EdgeInsets.only(bottom: 16),
                         child: TextField(
@@ -118,7 +138,7 @@ class LoginPage extends StatelessWidget {
                           obscureText: fields[2]['obscure'] as bool,
                           maxLength: fields[2]['maxLength'] as int,
                           decoration: InputDecoration(
-                            labelText: fields[2]['label'] as String,
+                            labelText: lang.t(fields[2]['label_en'], fields[2]['label_bm']),
                             prefixIcon: Icon(fields[2]['icon'] as IconData),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                             counterText: "",
@@ -138,7 +158,10 @@ class LoginPage extends StatelessWidget {
                           ),
                           child: auth.isLoading.value
                               ? const CircularProgressIndicator(color: Colors.white)
-                              : const Text('Login', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                              : Text(
+                                  lang.t("Login", "Log Masuk"),
+                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                ),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -149,9 +172,9 @@ class LoginPage extends StatelessWidget {
                         children: [
                           GestureDetector(
                             onTap: () => Get.toNamed('/register'),
-                            child: const Text(
-                              'Register User',
-                              style: TextStyle(
+                            child: Text(
+                              lang.t("Register User", "Daftar Pengguna"),
+                              style: const TextStyle(
                                 color: Colors.blue,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -159,9 +182,9 @@ class LoginPage extends StatelessWidget {
                           ),
                           GestureDetector(
                             onTap: () => Get.toNamed('/register_merchant'),
-                            child: const Text(
-                              'Register Merchant',
-                              style: TextStyle(
+                            child: Text(
+                              lang.t("Register Merchant", "Daftar Peniaga"),
+                              style: const TextStyle(
                                 color: Colors.blue,
                                 fontWeight: FontWeight.w600,
                               ),
