@@ -60,13 +60,21 @@ final Dio _dio = DioClient().dio; // ✅ Create an instance and access dio
 }
 
 
-  Future<Map<String, dynamic>> login(String email, String pin) async {
-    final response = await _dio.post('/auth/login', data: {
-      'email': email,
-      'pin': pin,
-    });
-    return response.data; // includes token and user info
+  Future<Map<String, dynamic>> login({String? email, String? phone, required String pin}) async {
+  final data = {
+    'pin': pin,
+  };
+
+  if (email != null && email.isNotEmpty) {
+    data['email'] = email;
+  } else if (phone != null && phone.isNotEmpty) {
+    data['phone'] = phone;
   }
+
+  final response = await _dio.post('/auth/login', data: data);
+  return response.data; // includes token and user info
+}
+
 
   // ---------------- WALLET ----------------
 

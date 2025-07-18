@@ -10,7 +10,7 @@ class LoginPage extends StatelessWidget {
   // ✅ All fields with embedded controllers
   final List<Map<String, dynamic>> fields = [
     {'label': 'Email', 'icon': Icons.email, 'keyboard': TextInputType.emailAddress, 'controller': TextEditingController()},
-    {'label': 'Phone Number', 'icon': Icons.phone, 'keyboard': TextInputType.phone, 'controller': TextEditingController()},
+    {'label': 'Phone Number', 'icon': Icons.phone, 'keyboard': TextInputType.number, 'controller': TextEditingController()},
     {'label': '6-Digit PIN', 'icon': Icons.lock, 'keyboard': TextInputType.number, 'controller': TextEditingController(), 'maxLength': 6, 'obscure': true},
   ];
 
@@ -61,7 +61,7 @@ class LoginPage extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Text(
-                        'Login',
+                        'BluePair',
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
@@ -154,7 +154,6 @@ class LoginPage extends StatelessWidget {
                               style: TextStyle(
                                 color: Colors.blue,
                                 fontWeight: FontWeight.w600,
-                                decoration: TextDecoration.underline,
                               ),
                             ),
                           ),
@@ -165,7 +164,6 @@ class LoginPage extends StatelessWidget {
                               style: TextStyle(
                                 color: Colors.blue,
                                 fontWeight: FontWeight.w600,
-                                decoration: TextDecoration.underline,
                               ),
                             ),
                           ),

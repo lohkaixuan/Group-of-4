@@ -8,7 +8,7 @@ class DioClient {
   DioClient()
       : _dio = Dio(
           BaseOptions(
-            baseUrl: 'http://localhost:3000', // ✅ Node backend on same PC
+            baseUrl: 'http://192.168.100.26:1060', // ✅ Node backend on same PC
             connectTimeout: const Duration(seconds: 30),
             receiveTimeout: const Duration(seconds: 30),
           ),

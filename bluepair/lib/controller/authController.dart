@@ -84,49 +84,49 @@ class AuthController extends GetxController {
   }
 
   /// 🏪 Register merchant
-Future<void> registerMerchant({
-  required String name,
-  required String email,
-  required String phone,
-  required String icNumber,
-  required String pin,
-  required String businessName,       // ✅ added
-  required String businessType,       // ✅ added
-  required String categoryService,    // ✅ added
-}) async {
-  if (icPhoto == null) {
-    Get.snackbar("Error", "IC photo is required");
-    return;
-  }
-  if (ssmCertificate == null) {
-    Get.snackbar("Error", "SSM certificate is required");
-    return;
-  }
+  Future<void> registerMerchant({
+    required String name,
+    required String email,
+    required String phone,
+    required String icNumber,
+    required String pin,
+    required String businessName, // ✅ added
+    required String businessType, // ✅ added
+    required String categoryService, // ✅ added
+  }) async {
+    if (icPhoto == null) {
+      Get.snackbar("Error", "IC photo is required");
+      return;
+    }
+    if (ssmCertificate == null) {
+      Get.snackbar("Error", "SSM certificate is required");
+      return;
+    }
 
-  isLoading.value = true;
-  try {
-    User user = await api.registerMerchant(
-      name: name,
-      email: email,
-      phone: phone,
-      pin: pin,
-      icNumber: icNumber,
-      icPhoto: icPhoto!,
-      ssmCertificate: ssmCertificate!,
-      businessName: businessName,         // ✅ pass business name
-      businessType: businessType,         // ✅ pass business type
-      categoryService: categoryService,   // ✅ pass category service
-    );
+    isLoading.value = true;
+    try {
+      User user = await api.registerMerchant(
+        name: name,
+        email: email,
+        phone: phone,
+        pin: pin,
+        icNumber: icNumber,
+        icPhoto: icPhoto!,
+        ssmCertificate: ssmCertificate!,
+        businessName: businessName, // ✅ pass business name
+        businessType: businessType, // ✅ pass business type
+        categoryService: categoryService, // ✅ pass category service
+      );
 
-    await storage.saveUserDetails(user.toJson());
-    Get.snackbar('Success', 'Merchant registration sent for approval');
-    Get.offAllNamed('/home');
-  } catch (e) {
-    Get.snackbar('Error', e.toString());
-  } finally {
-    isLoading.value = false;
+      await storage.saveUserDetails(user.toJson());
+      Get.snackbar('Success', 'Merchant registration sent for approval');
+      Get.offAllNamed('/home');
+    } catch (e) {
+      Get.snackbar('Error', e.toString());
+    } finally {
+      isLoading.value = false;
+    }
   }
-}
 
   /// 🔑 Login
   Future<void> login({
@@ -139,8 +139,9 @@ Future<void> registerMerchant({
       await storage.clearAll();
 
       final response = await api.login(
-        isEmailLogin.value ? email ?? '' : '',
-        pin,
+        email: isEmailLogin.value ? email : null,
+        phone: isEmailLogin.value ? null : phone,
+        pin: pin,
       );
 
       final token = response['token'];
@@ -165,14 +166,13 @@ Future<void> registerMerchant({
   }
 
   /// ✅ Check token existence (used in SplashScreen)
-Future<bool> checkToken() async {
-  try {
-    final token = await storage.getAuthToken();
-    // You can add extra logic here like validating expiry if needed
-    return token != null && token.isNotEmpty;
-  } catch (e) {
-    return false;
+  Future<bool> checkToken() async {
+    try {
+      final token = await storage.getAuthToken();
+      // You can add extra logic here like validating expiry if needed
+      return token != null && token.isNotEmpty;
+    } catch (e) {
+      return false;
+    }
   }
-}
-
 }

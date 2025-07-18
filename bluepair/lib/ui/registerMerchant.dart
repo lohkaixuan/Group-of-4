@@ -21,7 +21,7 @@ class RegisterMerchantPage extends StatelessWidget {
   final List<String> categoryServices = ['F&B', 'Retail', 'Logistics', 'Medical', 'Entertainment'];
 
   // ✅ obs for dropdowns
-  final RxString selectedBusinessType = 'MSME'.obs;
+  final RxString selectedBusinessType = 'Micro'.obs;
   final RxString selectedCategoryService = 'F&B'.obs;
 
   void _handleRegister() {
