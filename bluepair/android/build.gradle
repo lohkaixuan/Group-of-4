@@ -1,3 +1,16 @@
+// ✅ Put buildscript block first
+buildscript {
+    ext.kotlin_version = '1.9.24'   // ✅ Upgrade Kotlin version here
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "com.android.tools.build:gradle:8.2.2" // ✅ AGP that supports SDK 35
+    }
+}
+
 allprojects {
     repositories {
         google()
@@ -6,9 +19,11 @@ allprojects {
 }
 
 rootProject.buildDir = "../build"
+
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
+
 subprojects {
     project.evaluationDependsOn(":app")
 }

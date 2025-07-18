@@ -1,6 +1,6 @@
 // lib/models/models.dart
 
-// User model
+// ✅ User model
 class User {
   final String id;
   final String name;
@@ -8,7 +8,13 @@ class User {
   final String phone;
   final String role;
 
-  User({required this.id, required this.name, required this.email, required this.phone, required this.role});
+  User({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.phone,
+    required this.role,
+  });
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
@@ -19,15 +25,30 @@ class User {
       role: json['role'] ?? '',
     );
   }
+
+  // 🔹 Convert back to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email,
+      'phone': phone,
+      'role': role,
+    };
+  }
 }
 
-// Wallet model
+// ✅ Wallet model
 class Wallet {
   final String id;
   final String type;
   final double balance;
 
-  Wallet({required this.id, required this.type, required this.balance});
+  Wallet({
+    required this.id,
+    required this.type,
+    required this.balance,
+  });
 
   factory Wallet.fromJson(Map<String, dynamic> json) {
     return Wallet(
@@ -36,9 +57,18 @@ class Wallet {
       balance: (json['balance'] ?? 0).toDouble(),
     );
   }
+
+  // 🔹 Convert back to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'wallet_type': type,
+      'balance': balance,
+    };
+  }
 }
 
-// Transaction model
+// ✅ Transaction model
 class Transaction {
   final String id;
   final String buyerId;
@@ -62,5 +92,16 @@ class Transaction {
       amount: (json['amount'] ?? 0).toDouble(),
       status: json['status'] ?? '',
     );
+  }
+
+  // 🔹 Convert back to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'buyer_id': buyerId,
+      'seller_id': sellerId,
+      'amount': amount,
+      'status': status,
+    };
   }
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:bluepaor/controller/authController.dart';
+import 'package:bluepair/controller/authController.dart';
 
 class RegisterUserPage extends StatelessWidget {
   RegisterUserPage({Key? key}) : super(key: key);

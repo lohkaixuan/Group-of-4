@@ -1,4 +1,4 @@
-package com.example.bluepaor
+package com.example.bluepair
 
 import io.flutter.embedding.android.FlutterActivity
 

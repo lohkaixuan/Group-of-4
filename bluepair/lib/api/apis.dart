@@ -30,30 +30,35 @@ final Dio _dio = DioClient().dio; // ✅ Create an instance and access dio
     return User.fromJson(response.data['user']);
   }
 
-  Future<User> registerMerchant({
-    required String name,
-    required String email,
-    required String phone,
-    required String pin,
-    required String icNumber,
-    required File icPhoto,
-    required File ssmCertificate,
-    required String businessName,
-  }) async {
-    FormData formData = FormData.fromMap({
-      'name': name,
-      'email': email,
-      'phone': phone,
-      'pin': pin,
-      'ic_number': icNumber,
-      'ic_photo': await MultipartFile.fromFile(icPhoto.path),
-      'ssm_certificate': await MultipartFile.fromFile(ssmCertificate.path),
-      'business_name': businessName,
-    });
+ Future<User> registerMerchant({
+  required String name,
+  required String email,
+  required String phone,
+  required String pin,
+  required String icNumber,
+  required File icPhoto,
+  required File ssmCertificate,
+  required String businessName,
+  required String businessType,        // ✅ new
+  required String categoryService,     // ✅ new
+}) async {
+  FormData formData = FormData.fromMap({
+    'name': name,
+    'email': email,
+    'phone': phone,
+    'pin': pin,
+    'ic_number': icNumber,
+    'ic_photo': await MultipartFile.fromFile(icPhoto.path),
+    'ssm_certificate': await MultipartFile.fromFile(ssmCertificate.path),
+    'business_name': businessName,
+    'business_type': businessType,        // ✅ added
+    'category_service': categoryService,  // ✅ added
+  });
 
-    final response = await _dio.post('/auth/register-merchant', data: formData);
-    return User.fromJson(response.data['user']);
-  }
+  final response = await _dio.post('/auth/register-merchant', data: formData);
+  return User.fromJson(response.data['user']);
+}
+
 
   Future<Map<String, dynamic>> login(String email, String pin) async {
     final response = await _dio.post('/auth/login', data: {
