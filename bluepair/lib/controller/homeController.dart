@@ -61,7 +61,7 @@ class HomeController extends GetxController {
       return;
     }
 
-    final userId = user['id'];
+    //final userId = user['id'];
     // try {
     //   // You need to implement getTransactions in ApiService
     //   final txnList = await api.getTransactions(userId);

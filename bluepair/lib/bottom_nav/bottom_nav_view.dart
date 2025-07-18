@@ -1,6 +1,6 @@
 import 'package:bluepair/bottom_nav/bottom_nav_controller.dart';
 import 'package:bluepair/controller/langaugeController.dart';
-import 'package:bluepair/qr/qr_scanner.dart';
+import 'package:bluepair/qr/qr_menu.dart';
 import 'package:bluepair/ui/home.dart';
 import 'package:bluepair/ui/profile.dart';
 import 'package:flutter/material.dart';
@@ -57,7 +57,7 @@ class BottomNavApp extends StatelessWidget {
             onTap: (index) {
               if (index == 1) {
                 // Middle button (Scan) → open QR Scanner
-                Get.to(() => const QRScannerPage());
+                Get.to(() => const QRMenuPage());
                 return;
               }
               // 0 = home, 2 = profile
