@@ -44,16 +44,16 @@ class BottomNavApp extends StatelessWidget {
         ),
       ];
 
-      // If the user is an admin, add the Approve page
-      if (userRole == "admin") {
-        pages.add(Approve());
-        navItems.add(
-          BottomNavigationBarItem(
-            icon: Icon(Icons.check, color: theme.iconTheme.color),
-            label: "Approve",
-          ),
-        );
-      }
+      // // If the user is an admin, add the Approve page
+      // if (userRole == "admin") {
+      //   pages.add(Approve());
+      //   navItems.add(
+      //     BottomNavigationBarItem(
+      //       icon: Icon(Icons.check, color: theme.iconTheme.color),
+      //       label: "Approve",
+      //     ),
+      //   );
+      // }
 
       return Scaffold(
         body: pages[navController.selectedIndex.value],

@@ -1,108 +1,108 @@
+// lib/services/apis.dart
+import 'dart:io';
 import 'package:dio/dio.dart';
-
-
-class ApiException implements Exception {
-  final int? statusCode;
-  final String message;
-
-  ApiException(this.statusCode, this.message);
-
-  @override
-  String toString() {
-    return 'ApiException: $statusCode - $message';
-  }
-}
+import 'dio_client.dart';
+import 'models.dart';
 
 class ApiService {
-  final DioClient _dioClient;
-  String? _token;
+final Dio _dio = DioClient().dio; // ✅ Create an instance and access dio
 
-  ApiService(this._dioClient);
+  // ---------------- AUTH ----------------
 
-  /// 🔹 Initialize the token asynchronously
-  Future<void> initialize() async {
-    _token = await Storage().getAuthToken();
+  Future<User> registerUser({
+    required String name,
+    required String email,
+    required String phone,
+    required String pin,
+    required String icNumber,
+    required File icPhoto,
+  }) async {
+    FormData formData = FormData.fromMap({
+      'name': name,
+      'email': email,
+      'phone': phone,
+      'pin': pin,
+      'ic_number': icNumber,
+      'ic_photo': await MultipartFile.fromFile(icPhoto.path),
+    });
+
+    final response = await _dio.post('/auth/register', data: formData);
+    return User.fromJson(response.data['user']);
   }
 
-  /// 🔹 Authentication APIs
-  Future<LoginResponse> login(String email, String password) async {
-    try {
-      var response = await _dioClient.dio.post('/login',
-        data: {"email": email, "password": password},
-      );
-      print("login api $response");
-      return LoginResponse.fromJson(response.data);
-    } on DioException catch (e) {
-      throw ApiException(e.response?.statusCode, e.response?.data['message'] ?? 'Something went wrong');
-    }
+  Future<User> registerMerchant({
+    required String name,
+    required String email,
+    required String phone,
+    required String pin,
+    required String icNumber,
+    required File icPhoto,
+    required File ssmCertificate,
+    required String businessName,
+  }) async {
+    FormData formData = FormData.fromMap({
+      'name': name,
+      'email': email,
+      'phone': phone,
+      'pin': pin,
+      'ic_number': icNumber,
+      'ic_photo': await MultipartFile.fromFile(icPhoto.path),
+      'ssm_certificate': await MultipartFile.fromFile(ssmCertificate.path),
+      'business_name': businessName,
+    });
+
+    final response = await _dio.post('/auth/register-merchant', data: formData);
+    return User.fromJson(response.data['user']);
   }
 
-  // Future<EventsResponse> getEvents() async {
-  //       print("events api");   
-
-  //   try {
-  //     var response = await _dioClient.dio.get('/events/get',
-  //       data: {},
-  //     );
-  //     print("event api Response: $response");
-
-  //   // Print the type and value of the 'event_id' field of the first event in the response
-  //   print("event_id type: ${response.data['data'][0]['event_id'].runtimeType}");
-  //   print("event_id value: ${response.data['data'][0]['event_id']}");
-  //     return EventsResponse.fromJson(response.data);
-  //   } on DioException catch (e) {
-  //     throw ApiException(e.response?.statusCode, e.response?.data['message'] ?? 'Something went wrong');
-  //   }
-  // }
-  
-  Future<EventResponse> getEvent() async {
-    print("Fetching events...");
-
-    try {
-      // Make the GET request to the API
-      var response = await _dioClient.dio.get('/event/get',);
-      print("Response: ${response.data}");
-      print("Response runtimeType: ${response.data.runtimeType}");
-
-      // Decode the response data into the EventResponse model
-      return EventResponse.fromJson(response.data);
-    } on DioException catch (e) { 
-      // Handle any errors that occur during the request
-      throw ApiException(
-          e.response?.statusCode, e.response?.data['message'] ?? 'Something went wrong');
-    }
+  Future<Map<String, dynamic>> login(String email, String pin) async {
+    final response = await _dio.post('/auth/login', data: {
+      'email': email,
+      'pin': pin,
+    });
+    return response.data; // includes token and user info
   }
 
-  Future<EventsResponse> getEvents() async {
-    print("Fetching events...");
+  // ---------------- WALLET ----------------
 
-    try {
-      // Make the GET request to the API
-      var response = await _dioClient.dio.get('/events/get',);
-      print("Response: ${response.data}");
-      print("Response runtimeType: ${response.data.runtimeType}");
-
-      // Decode the response data into the EventResponse model
-      return EventsResponse.fromJson(response.data);
-    } on DioException catch (e) { 
-      // Handle any errors that occur during the request
-      throw ApiException(
-          e.response?.statusCode, e.response?.data['message'] ?? 'Something went wrong');
-    }
+  Future<List<Wallet>> getWallets(String userId) async {
+    final response = await _dio.get('/wallet', queryParameters: {'userId': userId});
+    List wallets = response.data;
+    return wallets.map((e) => Wallet.fromJson(e)).toList();
   }
 
+  Future<Wallet> topUpWallet(String walletId, double amount) async {
+    final response = await _dio.post('/wallet/topup', data: {
+      'walletId': walletId,
+      'amount': amount,
+    });
+    return Wallet.fromJson(response.data['wallet']);
+  }
 
-  // Future<RegisterResponse> register(email, password, name, phone, role) async {
-  //   try {
-  //     var response = await _dioClient.dio.post("/auth/register", 
-  //       data: {"email": email, "password": password, "name": name, "phone": phone, "role": role},
-  //     );
-  //     print("register api $response");
-  //     return RegisterResponse.fromJson(response.data);
-  //   } on DioException catch (e) {
-  //     throw ApiException(e.response?.statusCode, e.response?.data['message'] ?? 'Something went wrong');
-  //   }
-  // }
+  // ---------------- TRANSACTION ----------------
 
+  Future<Transaction> createTransaction(String buyerId, String sellerId, double amount) async {
+    final response = await _dio.post('/transaction', data: {
+      'buyer_id': buyerId,
+      'seller_id': sellerId,
+      'amount': amount,
+    });
+    return Transaction.fromJson(response.data['transaction']);
+  }
 
+  Future<Transaction> confirmTransaction(String transactionId) async {
+    final response = await _dio.post('/transaction/confirm', data: {
+      'transaction_id': transactionId,
+    });
+    return Transaction.fromJson(response.data['transaction']);
+  }
+
+  // ---------------- ADMIN ----------------
+
+  Future<Map<String, dynamic>> approveMerchant(String merchantId) async {
+    final response = await _dio.post('/admin/approve-merchant', data: {
+      'merchantId': merchantId,
+    });
+    return response.data;
+  }
 }
