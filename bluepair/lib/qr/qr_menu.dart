@@ -1,8 +1,10 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:bluepair/storage/storage.dart';
 import 'package:bluepair/widgets/common_appbar.dart';
 import 'package:bluepair/controller/langaugeController.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 
 class QRMenuPage extends StatefulWidget {
   const QRMenuPage({super.key});
@@ -16,20 +18,39 @@ class _QRMenuPageState extends State<QRMenuPage> {
   final storage = Storage();
 
   String? role;
+  Map<String, dynamic>? user;
+  String? personalWalletId;
+  String? merchantWalletId;
   bool loading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadUserRole();
+    _loadUserData();
   }
 
-  Future<void> _loadUserRole() async {
-    final user = await storage.getUserDetails();
+  Future<void> _loadUserData() async {
+    final userData = await storage.getUserDetails();
+    final personal = await storage.getWalletInfo('personal');
+    final merchant = await storage.getWalletInfo('merchant');
+
     setState(() {
-      role = user?['role'];
+      user = userData;
+      role = userData?['role'];
+      personalWalletId = personal?['id'];
+      merchantWalletId = merchant?['id'];
       loading = false;
     });
+  }
+
+  Future<String> _getMacAddress() async {
+    final info = await DeviceInfoPlugin().androidInfo;
+    return info.id ?? 'unknown_device';
+  }
+
+  String _generateRefId() {
+    final rand = Random().nextInt(999999);
+    return 'TXN${DateTime.now().millisecondsSinceEpoch}_$rand';
   }
 
   @override
@@ -54,8 +75,24 @@ class _QRMenuPageState extends State<QRMenuPage> {
           children: [
             if (isMerchant) ...[
               ElevatedButton.icon(
-                onPressed: () {
-                  Get.toNamed('/qr_generator', arguments: {'walletType':  'merchant'});
+                onPressed: () async {
+                  final amount = 100.0; // Static or dynamic amount as required.
+                  final macAddress = await _getMacAddress();
+                  final now = DateTime.now();
+                  final expiresAt = now.add(const Duration(minutes: 5));
+                  final refId = _generateRefId();
+
+                  Get.toNamed('/qr_generator', arguments: {
+                    'walletType': 'merchant',
+                    'walletId': merchantWalletId ?? '',
+                    'amount': amount,
+                    'macAddress': macAddress,
+                    'refId': refId,
+                    'timestamp': now.toIso8601String(),
+                    'expiresAt': expiresAt.toIso8601String(),
+                    'userDetails': user ?? {},
+                    'role': 'merchant',
+                  });
                 },
                 icon: const Icon(Icons.qr_code_2),
                 label: Text(lang.t("Generate QR (Merchant)", "Jana QR (Peniaga)")),
@@ -64,9 +101,24 @@ class _QRMenuPageState extends State<QRMenuPage> {
               const SizedBox(height: 24),
             ],
             ElevatedButton.icon(
-              onPressed: () {
-                Get.toNamed('/qr_generator', arguments: {'walletType':  'personal'});
+              onPressed: () async {
+                final amount = 100.0; // Static or dynamic amount as required.
+                final macAddress = await _getMacAddress();
+                final now = DateTime.now();
+                final expiresAt = now.add(const Duration(minutes: 5));
+                final refId = _generateRefId();
 
+                Get.toNamed('/qr_generator', arguments: {
+                  'walletType': 'personal',
+                  'walletId': personalWalletId ?? '',
+                  'amount': amount,
+                  'macAddress': macAddress,
+                  'refId': refId,
+                  'timestamp': now.toIso8601String(),
+                  'expiresAt': expiresAt.toIso8601String(),
+                  'userDetails': user ?? {},
+                  'role': 'user',
+                });
               },
               icon: const Icon(Icons.send),
               label: Text(lang.t("Direct Transfer", "Pemindahan Terus")),

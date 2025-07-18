@@ -8,7 +8,7 @@ class DioClient {
   DioClient()
       : _dio = Dio(
           BaseOptions(
-            baseUrl: 'https://f988eeb774e3.ngrok-free.app', // ✅ Node backend on same PC
+            baseUrl: 'https://71e751d224cb.ngrok-free.app', // ✅ Node backend on same PC
             connectTimeout: const Duration(seconds: 30),
             receiveTimeout: const Duration(seconds: 30),
           ),

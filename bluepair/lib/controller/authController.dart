@@ -96,12 +96,12 @@ class AuthController extends GetxController {
     try {
       await storage.clearAll();
       User user = await api.registerUser(
-        name: name,
-        email: email,
-        phone: phone,
-        icNumber: icNumber,
-        pin: pin,
-        icPhoto: icPhoto!,
+          name: name,
+          email: email,
+          phone: phone,
+          icNumber: icNumber,
+          pin: pin,
+          icPhoto: icPhoto!,
       );
       await saveUser(user.toJson(), null);
       Get.snackbar('Success', 'User registered');

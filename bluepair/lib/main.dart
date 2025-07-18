@@ -1,5 +1,4 @@
 import 'package:bluepair/bottom_nav/bottom_nav_controller.dart';
-import 'package:bluepair/controller/homeController.dart';
 import 'package:bluepair/controller/langaugeController.dart';
 import 'package:bluepair/controller/walletController.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +11,6 @@ void main() {
   Get.put(LanguageController());
   Get.put(AuthController()); // register controller
   Get.put(BottomNavController()); 
-  Get.put(HomeController());
   Get.put(WalletController());
   runApp(const MyApp());
 }
