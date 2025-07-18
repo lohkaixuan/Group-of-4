@@ -54,9 +54,10 @@ exports.registerUser = async (req, res) => {
 
 
 // 🔹 Register as merchant (reuses user record if exists)
+// ⭐ register as merchant (reuses user record if exists)
 exports.registerMerchant = async (req, res) => {
     try {
-        const { name, email, phone, ic_number, pin, business_type, category_service } = req.body;
+        const { name, email, phone, ic_number, pin, business_type, category_service, business_name } = req.body;
 
         // 🔹 Validate inputs first
         if (!validateIC(ic_number)) {
@@ -70,6 +71,9 @@ exports.registerMerchant = async (req, res) => {
         }
         if (!validatePin(pin)) {
             return res.status(400).json({ error: 'PIN must be exactly 6 digits' });
+        }
+        if (!business_name || business_name.trim() === '') { // ⭐ validate business name
+            return res.status(400).json({ error: 'Business name is required' });
         }
         if (!req.files || !req.files.ic_photo || !req.files.ssm_certificate) {
             return res.status(400).json({ error: 'IC photo and SSM certificate required' });
@@ -92,12 +96,11 @@ exports.registerMerchant = async (req, res) => {
                     return res.status(400).json({ error: 'Provided PIN does not match existing account.' });
                 }
             } else {
-                // If somehow no PIN stored, also reject or handle
                 return res.status(400).json({ error: 'Existing account has no PIN to verify.' });
             }
         }
 
-        // 🔹 Hash the new PIN (you may choose to re‑hash or keep existing)
+        // 🔹 Hash the new PIN
         const hashedPin = await bcrypt.hash(pin, 10);
 
         // 🔹 Upload files
@@ -110,8 +113,9 @@ exports.registerMerchant = async (req, res) => {
             email,
             phone,
             ic_number,
-            hashedPin, // overwrite or store new
+            hashedPin,
             ic_photo: icPhotoUrl,
+            business_name,        // ⭐ add business_name field
             business_type,
             category_service,
             ssm_certificate: ssmUrl,
