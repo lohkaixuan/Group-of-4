@@ -2,67 +2,85 @@ import 'dart:io';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
-import '../api/apis.dart';
-import '../storage/storage.dart';
-import '../api/models.dart';
+import 'package:bluepair/api/apis.dart';
+import 'package:bluepair/api/models.dart';
+import 'package:bluepair/storage/storage.dart';
 
 class AuthController extends GetxController {
   final Storage storage = Storage();
   final ApiService api = ApiService();
 
-  // 🔄 State
-  var isLoading = false.obs;
-  var isEmailLogin = true.obs;
+  // ✅ Reactive user info
+  RxString name = ''.obs;
+  RxString email = ''.obs;
+  RxString role = ''.obs;      // user / merchant
+  RxString status = ''.obs;    // merchant status
+  RxString token = ''.obs;     // JWT token
 
-  // 📌 Reactive user details for Obx
-  Rx<Map<String, dynamic>?> userDetails = Rx<Map<String, dynamic>?>(null);
+  // ✅ UI states
+  RxBool isLoading = false.obs;
+  RxBool isEmailLogin = true.obs;
 
-  // 📎 Picked files
+  // ✅ Picked files
   File? icPhoto;
   File? ssmCertificate;
 
-  /// 🔹 Load user from storage (call in SplashScreen or after login)
-  Future<void> loadUserFromStorage() async {
-    try {
-      final data = await storage.getUserDetails();
-      userDetails.value = data;
-    } catch (e) {
-      userDetails.value = null;
-    }
+  // ✅ Init load
+  @override
+  void onInit() {
+    super.onInit();
+    loadUserFromStorage();
   }
 
-  /// 📷 Pick IC photo (images only)
+  // 📥 Load from storage
+  Future<void> loadUserFromStorage() async {
+    final user = await storage.getUserDetails();
+    if (user != null) {
+      name.value = user['name'] ?? '';
+      email.value = user['email'] ?? '';
+      role.value = user['role'] ?? '';
+      status.value = user['status'] ?? '';
+    }
+    final t = await storage.getAuthToken();
+    if (t != null) token.value = t;
+  }
+
+  // 📦 Save user and token
+  Future<void> saveUser(Map<String, dynamic> user, String? authToken) async {
+    await storage.saveUserDetails(user);
+    if (authToken != null) {
+      await storage.saveAuthToken(authToken);
+      token.value = authToken;
+    }
+    name.value = user['name'] ?? '';
+    email.value = user['email'] ?? '';
+    role.value = user['role'] ?? '';
+    status.value = user['status'] ?? '';
+  }
+
+  // 📷 Pick IC photo
   Future<void> pickIcPhoto() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 85,
-    );
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
     if (picked != null) {
       icPhoto = File(picked.path);
-      update(); // for GetBuilder if used
       Get.snackbar('Selected', 'IC photo selected');
     } else {
       Get.snackbar('Cancelled', 'No IC photo selected');
     }
   }
 
-  /// 📄 Pick SSM certificate (PDF only)
+  // 📄 Pick SSM certificate
   Future<void> pickSsmCertificate() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-    );
+    final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf']);
     if (result != null && result.files.isNotEmpty) {
       ssmCertificate = File(result.files.first.path!);
-      update();
       Get.snackbar('Selected', 'SSM certificate selected');
     } else {
       Get.snackbar('Cancelled', 'No SSM file selected');
     }
   }
 
-  /// 👤 Register User
+  // 🧑‍💻 Register User
   Future<void> registerUser({
     required String name,
     required String email,
@@ -74,23 +92,18 @@ class AuthController extends GetxController {
       Get.snackbar("Error", "IC photo is required");
       return;
     }
-
     isLoading.value = true;
     try {
       await storage.clearAll();
-
       User user = await api.registerUser(
         name: name,
         email: email,
         phone: phone,
-        pin: pin,
         icNumber: icNumber,
+        pin: pin,
         icPhoto: icPhoto!,
       );
-
-      await storage.saveUserDetails(user.toJson());
-      userDetails.value = user.toJson(); // ✅ reactive update
-
+      await saveUser(user.toJson(), null);
       Get.snackbar('Success', 'User registered');
       Get.offAllNamed('/home');
     } catch (e) {
@@ -100,7 +113,7 @@ class AuthController extends GetxController {
     }
   }
 
-  /// 🏪 Register Merchant
+  // 🏪 Register Merchant
   Future<void> registerMerchant({
     required String name,
     required String email,
@@ -119,25 +132,21 @@ class AuthController extends GetxController {
       Get.snackbar("Error", "SSM certificate is required");
       return;
     }
-
     isLoading.value = true;
     try {
       User user = await api.registerMerchant(
         name: name,
         email: email,
         phone: phone,
-        pin: pin,
         icNumber: icNumber,
+        pin: pin,
         icPhoto: icPhoto!,
         ssmCertificate: ssmCertificate!,
         businessName: businessName,
         businessType: businessType,
         categoryService: categoryService,
       );
-
-      await storage.saveUserDetails(user.toJson());
-      userDetails.value = user.toJson(); // ✅ reactive update
-
+      await saveUser(user.toJson(), null);
       Get.snackbar('Success', 'Merchant registration sent for approval');
       Get.offAllNamed('/home');
     } catch (e) {
@@ -147,7 +156,7 @@ class AuthController extends GetxController {
     }
   }
 
-  /// 🔑 Login
+  // 🔑 Login
   Future<void> login({
     String? email,
     String? phone,
@@ -156,20 +165,14 @@ class AuthController extends GetxController {
     isLoading.value = true;
     try {
       await storage.clearAll();
-
       final response = await api.login(
         email: isEmailLogin.value ? email : null,
         phone: isEmailLogin.value ? null : phone,
         pin: pin,
       );
-
-      final token = response['token'];
+      final tokenStr = response['token'];
       final user = response['user'];
-
-      await storage.saveAuthToken(token);
-      await storage.saveUserDetails(user);
-      userDetails.value = user; // ✅ reactive update
-
+      await saveUser(user, tokenStr);
       Get.snackbar('Success', 'Login successful');
       Get.offAllNamed('/home');
     } catch (e) {
@@ -179,20 +182,20 @@ class AuthController extends GetxController {
     }
   }
 
-  /// 🚪 Logout
+  // 🚪 Logout
   Future<void> logout() async {
     await storage.clearAll();
-    userDetails.value = null; // ✅ reactive clear
+    name.value = '';
+    email.value = '';
+    role.value = '';
+    status.value = '';
+    token.value = '';
     Get.offAllNamed('/login');
   }
 
-  /// ✅ Check token existence (used in SplashScreen)
+  // ✅ Check token in storage
   Future<bool> checkToken() async {
-    try {
-      final token = await storage.getAuthToken();
-      return token != null && token.isNotEmpty;
-    } catch (e) {
-      return false;
-    }
+    final t = await storage.getAuthToken();
+    return t != null && t.isNotEmpty;
   }
 }

@@ -16,65 +16,91 @@ class HomeController extends GetxController {
   // Whether currently viewing merchant wallet or personal wallet
   RxBool isMerchantWallet = false.obs;
 
-  // Transactions (you can change to List<Transaction> if you prefer)
+  // Transactions (simple string list for now)
   RxList<String> transactions = <String>[].obs;
+
+  // User role
+  RxString role = ''.obs;
 
   @override
   void onInit() {
     super.onInit();
     loadWallets();
-    loadTransactions();
   }
 
   /// 🔄 Load wallets from API based on logged-in user
-  Future<void> loadWallets() async {
-    final user = await storage.getUserDetails();
-    if (user == null || user['id'] == null) {
-      print('⚠️ No user found in storage.');
-      return;
-    }
+Future<void> loadWallets() async {
+  final user = await storage.getUserDetails();
+  if (user == null || user['id'] == null) {
+    print('⚠️ No user found in storage.');
+    return;
+  }
 
-    final userId = user['id'];
-    try {
-      final wallets = await api.getWallets(userId);
-      for (var w in wallets) {
-        if (w.type.toLowerCase() == 'personal') {
-          personalWalletAmount.value = w.balance;
-          personalWalletId.value = w.id;
-        } else if (w.type.toLowerCase() == 'merchant') {
-          merchantWalletAmount.value = w.balance;
-          merchantWalletId.value = w.id;
-        }
+  role.value = (user['role'] ?? '').toString();
+  final userId = user['id'];
+
+  try {
+    final wallets = await api.getWallets(userId);
+
+    double personal = 0.0;
+    double merchant = 0.0;
+    String pId = '';
+    String mId = '';
+
+    for (var w in wallets) {
+      if (w.type.toLowerCase() == 'personal') {
+        personal = w.balance;
+        pId = w.id;
+      } else if (w.type.toLowerCase() == 'merchant') {
+        merchant = w.balance;
+        mId = w.id;
       }
-      print('✅ Wallets loaded successfully.');
-    } catch (e) {
-      print('❌ Failed to load wallets: $e');
-    }
-  }
-
-  /// 🔄 Load transactions from API for this user
-  Future<void> loadTransactions() async {
-    final user = await storage.getUserDetails();
-    if (user == null || user['id'] == null) {
-      print('⚠️ No user found in storage.');
-      transactions.clear();
-      return;
     }
 
-    //final userId = user['id'];
-    // try {
-    //   // You need to implement getTransactions in ApiService
-    //   final txnList = await api.getTransactions(userId);
-    //   transactions.value = txnList.map((t) {
-    //     // Format as you like, here is an example
-    //     return "${t.id} • ${t.status} • RM${t.amount.toStringAsFixed(2)}";
-    //   }).toList();
-    //   print('✅ Transactions loaded successfully.');
-    // } catch (e) {
-    //   print('❌ Failed to load transactions: $e');
-    //   transactions.clear();
-    // }
+    // Update reactive fields
+    personalWalletAmount.value = personal;
+    personalWalletId.value = pId;
+    merchantWalletAmount.value = merchant;
+    merchantWalletId.value = mId;
+
+    // ✅ Save each wallet separately in secure storage
+    await storage.saveWalletInfo({'id': pId, 'balance': personal}, 'personal');
+    await storage.saveWalletInfo({'id': mId, 'balance': merchant}, 'merchant');
+
+    print('✅ Wallets loaded & saved to storage.');
+    // If needed, load transactions afterward
+    // await loadTransactions();
+
+  } catch (e) {
+    print('❌ Failed to load wallets: $e');
   }
+}
+
+
+  // /// 🔄 Load transactions from API
+  // Future<void> loadTransactions() async {
+  //   final user = await storage.getUserDetails();
+  //   if (user == null || user['id'] == null) {
+  //     transactions.clear();
+  //     return;
+  //   }
+
+  //   final userId = user['id'];
+  //   try {
+  //     final txnList = await api.getTransactions(userId);
+  //     transactions.value = txnList.map((t) {
+  //       return "${t.id} • ${t.status} • RM${t.amount.toStringAsFixed(2)}";
+  //     }).toList();
+
+  //     // Optionally save to storage if you want offline support
+  //     await storage.saveTransactions(transactions.toList());
+
+  //     print('✅ Transactions loaded successfully.');
+  //   } catch (e) {
+  //     print('❌ Failed to load transactions: $e');
+  //     transactions.clear();
+  //   }
+  // }
 
   /// 🔁 Toggle between merchant wallet and personal wallet
   void toggleWallet() {
@@ -91,15 +117,9 @@ class HomeController extends GetxController {
     }
 
     try {
-      final wallet = await api.topUpWallet(walletId, amount);
-      if (wallet.type.toLowerCase() == 'personal') {
-        personalWalletAmount.value = wallet.balance;
-      } else {
-        merchantWalletAmount.value = wallet.balance;
-      }
+      await api.topUpWallet(walletId, amount);
       print('✅ Top-up successful.');
-      // Reload transactions after top-up if needed
-      loadTransactions();
+      await loadWallets(); // Refresh wallets and transactions
     } catch (e) {
       print('❌ Top-up failed: $e');
     }

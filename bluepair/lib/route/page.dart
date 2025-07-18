@@ -1,4 +1,6 @@
 import 'package:bluepair/qr/qr_sanner.dart';
+import 'package:bluepair/ui/myaccount.dart';
+import 'package:bluepair/widgets/BiometricGate.dart';
 import 'package:get/get.dart';
 
 // 🔹 Existing pages
@@ -70,5 +72,9 @@ class AppRoutes {
       name: '/qr_scanner',
       page: () => QRScannerPage(),
     ),
+    GetPage(
+      name: '/myaccount',
+      page: () => MyAccountPage(),
+    ),  
   ];
 }

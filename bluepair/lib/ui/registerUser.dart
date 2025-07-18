@@ -87,7 +87,11 @@ class RegisterUserPage extends StatelessWidget {
                 child: Text(lang.t('Pick IC Photo', 'Pilih Gambar IC')),
               ),
               const SizedBox(height: 24),
-
+              if (auth.icPhoto != null)
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Image.file(auth.icPhoto!, height: 100),
+                ),
               ElevatedButton(
                 onPressed: auth.isLoading.value ? null : _handleRegister,
                 child: auth.isLoading.value

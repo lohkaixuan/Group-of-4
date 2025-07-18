@@ -118,6 +118,7 @@ class LoginPage extends StatelessWidget {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: TextField(
+                            key: UniqueKey(), // ✅ Force rebuild on toggle
                             controller: f['controller'] as TextEditingController,
                             keyboardType: f['keyboard'] as TextInputType,
                             decoration: InputDecoration(

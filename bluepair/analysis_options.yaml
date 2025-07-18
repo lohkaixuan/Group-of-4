@@ -26,3 +26,7 @@ linter:
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options
+analyzer:
+  exclude:
+    - packages/flutter_bluetooth_serial/example/**
+    - packages/qr_code_scanner/example/**

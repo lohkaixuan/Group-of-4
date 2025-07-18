@@ -17,27 +17,20 @@ class BottomNavApp extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Obx(() {
-      // Pages for Home and Profile
+      /// ✅ Now we have 3 pages: Home, Scan, Profile
       final List<Widget> pages = [
         Home(),
+        QRMenuPage(), // 👈 new page for Scan
         Profile(),
       ];
 
-      // Build nav items with translated labels
       final navItems = [
         BottomNavigationBarItem(
           icon: Icon(Icons.home, color: theme.iconTheme.color),
           label: lang.t("Home", "Laman Utama"),
         ),
         BottomNavigationBarItem(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: const BoxDecoration(
-              color: Colors.blue,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.qr_code_scanner, color: Colors.white, size: 30),
-          ),
+          icon: Icon(Icons.qr_code_scanner, color: theme.iconTheme.color),
           label: lang.t("Scan", "Imbas"),
         ),
         BottomNavigationBarItem(
@@ -47,32 +40,22 @@ class BottomNavApp extends StatelessWidget {
       ];
 
       return Scaffold(
-        // Switch page between Home (0) or Profile (1)
-        body: pages[
-          navController.selectedIndex.value == 0 ? 0 : 1
-        ],
-        bottomNavigationBar: Obx(() {
-          return BottomNavigationBar(
-            currentIndex: navController.selectedIndex.value,
-            onTap: (index) {
-              if (index == 1) {
-                // Middle button (Scan) → open QR Scanner
-                Get.to(() => const QRMenuPage());
-                return;
-              }
-              // 0 = home, 2 = profile
-              navController.changeIndex(index == 0 ? 0 : 1);
-            },
-            items: navItems,
-            backgroundColor: theme.bottomNavigationBarTheme.backgroundColor,
-            selectedItemColor: theme.bottomNavigationBarTheme.selectedItemColor,
-            unselectedItemColor: theme.bottomNavigationBarTheme.unselectedItemColor,
-            selectedLabelStyle: theme.textTheme.labelLarge,
-            unselectedLabelStyle: theme.textTheme.labelLarge?.copyWith(
-              color: theme.bottomNavigationBarTheme.unselectedItemColor,
-            ),
-          );
-        }),
+        body: pages[navController.selectedIndex.value],
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: navController.selectedIndex.value,
+          onTap: (index) {
+            /// Simply change index directly
+            navController.changeIndex(index);
+          },
+          items: navItems,
+          backgroundColor: theme.bottomNavigationBarTheme.backgroundColor,
+          selectedItemColor: theme.bottomNavigationBarTheme.selectedItemColor,
+          unselectedItemColor: theme.bottomNavigationBarTheme.unselectedItemColor,
+          selectedLabelStyle: theme.textTheme.labelLarge,
+          unselectedLabelStyle: theme.textTheme.labelLarge?.copyWith(
+            color: theme.bottomNavigationBarTheme.unselectedItemColor,
+          ),
+        ),
       );
     });
   }

@@ -1,47 +1,79 @@
-const Wallet = require('../models/WalletModel');
 const { db } = require('../config/firebase');
+const { createWallet } = require('../models/WalletModel');
+const { addBlock, getMerchantBlock, encrypt, decrypt } = require('../utils/blockchain');
 
-const crypto = require('crypto');
-const { db } = require('../config/firebase');
-const Wallet = require('../models/WalletModel');
+// ✅ Approve merchant by userId
+exports.approveMerchantById = async (userId) => {
+  const ref = db.collection('users').doc(userId);
+  const snap = await ref.get();
+  if (!snap.exists) return;
 
-exports.approveMerchant = async (req, res) => {
-  try {
-    const { userId } = req.body;
-    const userRef = db.collection('users').doc(userId);
-    const userDoc = await userRef.get();
-    if (!userDoc.exists) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+  const user = snap.data();
+  let updateData = { status: 'approved' };
 
-    // Generate merchant secret key
-    const merchantSecretKey = crypto.randomBytes(32).toString('hex');
-
-    // Create dual wallets
-    const personalWallet = await Wallet.createWallet(userId, 'personal');
-    const merchantWallet = await Wallet.createWallet(userId, 'merchant');
-
-    // Update Firestore
-    await userRef.update({
-      status: 'approved',
-      merchant_secret_key: merchantSecretKey,
-      wallets: {
-        personal_wallet_id: personalWallet.id,
-        merchant_wallet_id: merchantWallet.id
-      },
-      approved_at: new Date().toISOString()
-    });
-
-    // Return to admin panel (you can also send it to merchant securely)
-    res.json({
-      message: 'Merchant approved',
-      merchant_secret_key: merchantSecretKey, // show once
-      personal_wallet_id: personalWallet.id,
-      merchant_wallet_id: merchantWallet.id
-    });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Approval failed' });
+  // ✅ Check & create personal wallet
+  const personalSnap = await db.collection('wallets')
+    .where('user_id', '==', userId)
+    .where('type', '==', 'personal')
+    .limit(1)
+    .get();
+  if (personalSnap.empty) {
+    const personalWallet = await createWallet(userId, 'personal');
+    updateData.personal_wallet_id = personalWallet.wallet_id;
+    console.log('✅ Created personal wallet');
+  } else {
+    console.log('ℹ️ Personal wallet already exists');
   }
+
+  // ✅ Check & create merchant wallet
+  const merchantSnap = await db.collection('wallets')
+    .where('user_id', '==', userId)
+    .where('type', '==', 'merchant')
+    .limit(1)
+    .get();
+  if (merchantSnap.empty) {
+    const merchantWallet = await createWallet(userId, 'merchant');
+    updateData.merchant_wallet_id = merchantWallet.wallet_id;
+    console.log('✅ Created merchant wallet');
+  } else {
+    console.log('ℹ️ Merchant wallet already exists');
+  }
+
+  // ✅ Update Firestore user document
+  await ref.update(updateData);
+
+  // ✅ Prepare merchant block data
+  const merchantBlockData = {
+    id: userId,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    business_type: user.business_type,
+    category_service: user.category_service,
+    ssm_certificate: encrypt(user.ssm_certificate || ''), // encrypt the SSM cert before storing
+    approved_at: new Date().toISOString(),
+  };
+
+  // ✅ Add to blockchain
+  const merchantBlock = await addBlock(merchantBlockData);
+  console.log('✅ Block created on-chain:', merchantBlock.hash);
+};
+
+// ✅ Public API helper to fetch merchant block
+exports.getMerchantBlockchainData = async (userId) => {
+  const block = await getMerchantBlock(userId);
+  if (!block) return null;
+
+  // decrypt SSM if exists
+  const decryptedSSM = block.data?.ssm_certificate
+    ? decrypt(block.data.ssm_certificate)
+    : null;
+
+  return {
+    ...block,
+    data: {
+      ...block.data,
+      ssm_certificate: decryptedSSM
+    }
+  };
 };

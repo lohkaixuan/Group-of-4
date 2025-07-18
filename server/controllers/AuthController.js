@@ -1,8 +1,9 @@
 const { db } = require('../config/firebase');
 const jwt = require('jsonwebtoken');
-const { validateIC, validatePhone, validateEmail, validatePin } = require('../utils/validation');
-const uploadToStorage = require('../utils/uploadToStorage');
 const bcrypt = require('bcrypt');
+const uploadToStorage = require('../utils/uploadToStorage');
+const { validateIC, validatePhone, validateEmail, validatePin } = require('../utils/validation');
+const { createWallet } = require('../models/WalletModel');
 require('dotenv').config();
 const SECRET_KEY = process.env.JWT_SECRET;
 
@@ -10,76 +11,90 @@ const SECRET_KEY = process.env.JWT_SECRET;
 exports.registerUser = async (req, res) => {
     try {
         const { name, email, phone, ic_number, pin } = req.body;
-        console.log('req.body:', req.body);
-        console.log('req.files:', req.files);
 
-        // 🔹 Validate inputs
-        if (!validateIC(ic_number)) {
-            return res.status(400).json({ error: 'Invalid IC number format (expected XXXXXX-XX-XXXX)' });
-        }
-        if (!validatePhone(phone)) {
-            return res.status(400).json({ error: 'Invalid phone number (digits only)' });
-        }
-        if (!validateEmail(email)) {
-            return res.status(400).json({ error: 'Invalid email address' });
-        }
-        if (!validatePin(pin)) {
-            return res.status(400).json({ error: 'PIN must be exactly 6 digits' });
-        }
+        // ✅ Validate
+        if (!validateIC(ic_number)) return res.status(400).json({ error: 'Invalid IC number format' });
+        if (!validatePhone(phone)) return res.status(400).json({ error: 'Invalid phone number' });
+        if (!validateEmail(email)) return res.status(400).json({ error: 'Invalid email address' });
+        if (!validatePin(pin)) return res.status(400).json({ error: 'PIN must be exactly 6 digits' });
 
         if (!req.files || !req.files.ic_photo) {
             return res.status(400).json({ error: 'IC photo is required' });
         }
-        const hashedPin = await bcrypt.hash(pin, 10);
 
-        // 🔹 Upload and save
+        // ✅ Hash PIN and upload photo
+        const hashedPin = await bcrypt.hash(pin, 10);
         const icPhotoUrl = await uploadToStorage(req.files.ic_photo[0], 'ic_photos');
+
+        // ✅ Create user in Firestore
         const docRef = await db.collection('users').add({
             name,
             email,
             phone,
             ic_number,
-            hashedPin, // save pin (⚠️ consider hashing!)
+            hashedPin,
             ic_photo: icPhotoUrl,
             role: 'user',
             created_at: new Date().toISOString(),
         });
 
-        res.json({ id: docRef.id, name, email, phone, ic_number, ic_photo: icPhotoUrl, role: 'user' });
+        // ✅ Create personal wallet
+        const personalWallet = await createWallet(docRef.id, 'personal');
+
+        // ✅ Save wallet ID into user record
+        await db.collection('users').doc(docRef.id).update({
+            personal_wallet_id: personalWallet.wallet_id,
+        });
+
+        // ✅ Build user object for response
+        const userObj = {
+            id: docRef.id, // ✅ include user ID
+            name,
+            email,
+            phone,
+            ic_number,
+            ic_photo: icPhotoUrl,
+            role: 'user',
+            personal_wallet_id: personalWallet.wallet_id, // ✅ include wallet id
+        };
+
+        return res.status(201).json({
+            message: 'User registered successfully',
+            user: userObj,
+        });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: 'User registration failed' });
+        return res.status(500).json({ error: 'User registration failed' });
     }
 };
 
-
-// 🔹 Register as merchant (reuses user record if exists)
-// ⭐ register as merchant (reuses user record if exists)
+// 🔹 Register merchant
 exports.registerMerchant = async (req, res) => {
     try {
-        const { name, email, phone, ic_number, pin, business_type, category_service, business_name } = req.body;
+        const {
+            name,
+            email,
+            phone,
+            ic_number,
+            pin,
+            business_type,
+            category_service,
+            business_name,
+        } = req.body;
 
-        // 🔹 Validate inputs first
-        if (!validateIC(ic_number)) {
-            return res.status(400).json({ error: 'Invalid IC number format' });
-        }
-        if (!validatePhone(phone)) {
-            return res.status(400).json({ error: 'Invalid phone number' });
-        }
-        if (!validateEmail(email)) {
-            return res.status(400).json({ error: 'Invalid email address' });
-        }
-        if (!validatePin(pin)) {
-            return res.status(400).json({ error: 'PIN must be exactly 6 digits' });
-        }
-        if (!business_name || business_name.trim() === '') { // ⭐ validate business name
+        // ✅ Validate
+        if (!validateIC(ic_number)) return res.status(400).json({ error: 'Invalid IC number format' });
+        if (!validatePhone(phone)) return res.status(400).json({ error: 'Invalid phone number' });
+        if (!validateEmail(email)) return res.status(400).json({ error: 'Invalid email address' });
+        if (!validatePin(pin)) return res.status(400).json({ error: 'PIN must be exactly 6 digits' });
+        if (!business_name || business_name.trim() === '') {
             return res.status(400).json({ error: 'Business name is required' });
         }
         if (!req.files || !req.files.ic_photo || !req.files.ssm_certificate) {
-            return res.status(400).json({ error: 'IC photo and SSM certificate required' });
+            return res.status(400).json({ error: 'IC photo and SSM certificate are required' });
         }
 
-        // 🔹 Look up existing user by IC
+        // ✅ Check if user exists
         const snap = await db.collection('users').where('ic_number', '==', ic_number).get();
         let userId = null;
         let existingData = null;
@@ -88,26 +103,17 @@ exports.registerMerchant = async (req, res) => {
             const doc = snap.docs[0];
             userId = doc.id;
             existingData = doc.data();
-
-            // ✅ Check PIN match
-            if (existingData.hashedPin) {
-                const pinMatches = await bcrypt.compare(pin, existingData.hashedPin);
-                if (!pinMatches) {
-                    return res.status(400).json({ error: 'Provided PIN does not match existing account.' });
-                }
-            } else {
-                return res.status(400).json({ error: 'Existing account has no PIN to verify.' });
+            const pinMatches = await bcrypt.compare(pin, existingData.hashedPin || '');
+            if (!pinMatches) {
+                return res.status(400).json({ error: 'Provided PIN does not match existing account.' });
             }
         }
 
-        // 🔹 Hash the new PIN
+        // ✅ Hash PIN and upload documents
         const hashedPin = await bcrypt.hash(pin, 10);
-
-        // 🔹 Upload files
         const icPhotoUrl = await uploadToStorage(req.files.ic_photo[0], 'ic_photos');
         const ssmUrl = await uploadToStorage(req.files.ssm_certificate[0], 'ssm_certificates');
 
-        // 🔹 Prepare merchant data
         const merchantData = {
             name,
             email,
@@ -115,7 +121,7 @@ exports.registerMerchant = async (req, res) => {
             ic_number,
             hashedPin,
             ic_photo: icPhotoUrl,
-            business_name,        // ⭐ add business_name field
+            business_name,
             business_type,
             category_service,
             ssm_certificate: ssmUrl,
@@ -125,35 +131,44 @@ exports.registerMerchant = async (req, res) => {
         };
 
         if (userId) {
-            // Update existing user
             await db.collection('users').doc(userId).update(merchantData);
-            return res.json({ id: userId, ...existingData, ...merchantData });
         } else {
-            // Create new document
             const docRef = await db.collection('users').add({
                 ...merchantData,
                 created_at: new Date().toISOString(),
             });
-            return res.json({ id: docRef.id, ...merchantData });
+            userId = docRef.id;
         }
+
+        return res.status(201).json({
+            message: 'Merchant registration saved',
+            user: {
+                id: userId, // ✅ include user ID
+                name,
+                email,
+                phone,
+                role: 'merchant',
+                business_name,
+                business_type,
+                category_service,
+                status: 'pending_approval',
+                ic_photo: icPhotoUrl,
+                ssm_certificate: ssmUrl,
+            },
+        });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: 'Merchant registration failed' });
     }
 };
 
-
+// 🔹 Login
 exports.login = async (req, res) => {
     try {
         const { email, phone, pin } = req.body;
-
-        if (!pin) {
-            return res.status(400).json({ error: 'PIN is required' });
-        }
+        if (!pin) return res.status(400).json({ error: 'PIN is required' });
 
         let snap;
-
-        // Search by email or phone
         if (email) {
             snap = await db.collection('users').where('email', '==', email).get();
         } else if (phone) {
@@ -162,37 +177,41 @@ exports.login = async (req, res) => {
             return res.status(400).json({ error: 'Either email or phone is required' });
         }
 
-        if (snap.empty) {
-            return res.status(401).json({ error: 'User not found' });
-        }
+        if (snap.empty) return res.status(401).json({ error: 'User not found' });
 
         const doc = snap.docs[0];
-        const userData = { id: doc.id, ...doc.data() };
+        const userData = { id: doc.id, ...doc.data() }; // ✅ include id from Firestore doc.id
 
-        // Compare pin
         const match = await bcrypt.compare(pin, userData.hashedPin);
-        if (!match) {
-            return res.status(401).json({ error: 'Invalid PIN' });
-        }
+        if (!match) return res.status(401).json({ error: 'Invalid PIN' });
 
-        // Generate a new token
         const token = jwt.sign(
             { uid: doc.id, role: userData.role, email: userData.email },
             SECRET_KEY,
             { expiresIn: '1h' }
         );
 
-        // 👉 Save this token back to Firestore (optional but you asked for it)
         await db.collection('users').doc(doc.id).update({
             lastLoginAt: new Date().toISOString(),
-            token: token
+            token: token,
         });
 
-        // Respond with token and user
-        res.json({ token, user: { ...userData, token } });
-
+        return res.json({
+            message: 'Login successful',
+            token,
+            user: {
+                id: userData.id, // ✅ explicitly include user id
+                name: userData.name,
+                email: userData.email,
+                phone: userData.phone,
+                role: userData.role,
+                personal_wallet_id: userData.personal_wallet_id || null,
+                merchant_wallet_id: userData.merchant_wallet_id || null,
+                token: token,
+            },
+        });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: 'Login failed' });
+        return res.status(500).json({ error: 'Login failed' });
     }
 };

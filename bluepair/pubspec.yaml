@@ -46,12 +46,19 @@ dependencies:
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   path_provider: ^2.0.15
+  flutter_secure_storage: ^9.0.0
+  json_annotation: ^4.9.0
+  local_auth: ^2.3.0
+  flutter_blue_plus: ^1.35.5
+  encrypt: ^5.0.1
+  uuid: ^3.0.7
 
   flutter_bluetooth_serial:
     path: packages/flutter_bluetooth_serial
 
   qr_code_scanner:
     path: packages/qr_code_scanner
+  
 
 
 dev_dependencies:

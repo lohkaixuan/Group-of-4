@@ -53,5 +53,8 @@
     <string>We use Bluetooth to connect with nearby devices.</string>
     <key>NSBluetoothPeripheralUsageDescription</key>
     <string>We use Bluetooth to communicate with devices.</string>
+    <key>NSFaceIDUsageDescription</key>
+    <string>We use Face ID to protect your account.</string>
+    
 </dict>
 </plist>

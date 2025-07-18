@@ -30,7 +30,7 @@ final Dio _dio = DioClient().dio; // ✅ Create an instance and access dio
     return User.fromJson(response.data['user']);
   }
 
- Future<User> registerMerchant({
+  Future<User> registerMerchant({
   required String name,
   required String email,
   required String phone,
@@ -90,6 +90,16 @@ final Dio _dio = DioClient().dio; // ✅ Create an instance and access dio
       'amount': amount,
     });
     return Wallet.fromJson(response.data['wallet']);
+  }
+  
+  Future<List<Map<String, dynamic>>> getTopUpHistory(String userId) async {
+    final response = await _dio.get('/wallet/history', queryParameters: {
+      'userId': userId,
+    });
+
+    // assuming response.data is a List of JSON objects
+    List data = response.data;
+    return data.map((e) => Map<String, dynamic>.from(e)).toList();
   }
 
   // ---------------- TRANSACTION ----------------

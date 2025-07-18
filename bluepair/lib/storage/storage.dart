@@ -1,50 +1,102 @@
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class Storage {
-  // 🔑 Save auth token
+  final _storage = const FlutterSecureStorage();
+
+  // 🔑 Token
   Future<void> saveAuthToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('auth_token', token);
+    await _storage.write(key: 'auth_token', value: token);
   }
 
-  // 🔑 Get auth token
   Future<String?> getAuthToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('auth_token');
+    return await _storage.read(key: 'auth_token');
   }
 
-  // 👤 Save user details (id, name, email, phone, role)
+  // 👤 User details (also save id separately for convenience)
   Future<void> saveUserDetails(Map<String, dynamic> userJson) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_details', jsonEncode(userJson));
+    await _storage.write(key: 'user_details', value: jsonEncode(userJson));
+
+    // ✅ also store user id for quick lookup
+    if (userJson['id'] != null) {
+      await _storage.write(key: 'user_id', value: userJson['id'].toString());
+    }
+
+    // ✅ if wallet IDs are in user JSON, store them as well
+    if (userJson['personal_wallet_id'] != null) {
+      await _storage.write(
+          key: 'personal_wallet_id', value: userJson['personal_wallet_id'].toString());
+    }
+    if (userJson['merchant_wallet_id'] != null) {
+      await _storage.write(
+          key: 'merchant_wallet_id', value: userJson['merchant_wallet_id'].toString());
+    }
   }
 
-  // 👤 Get user details
   Future<Map<String, dynamic>?> getUserDetails() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonStr = prefs.getString('user_details');
+    final jsonStr = await _storage.read(key: 'user_details');
     if (jsonStr == null) return null;
     return jsonDecode(jsonStr) as Map<String, dynamic>;
   }
 
-  // 👛 Save wallet info (id, type, balance)
-  Future<void> saveWalletInfo(Map<String, dynamic> walletJson) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('wallet_info', jsonEncode(walletJson));
+  Future<String?> getUserId() async {
+    return await _storage.read(key: 'user_id');
   }
 
-  // 👛 Get wallet info
-  Future<Map<String, dynamic>?> getWalletInfo() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonStr = prefs.getString('wallet_info');
+  Future<String?> getPersonalWalletId() async {
+    return await _storage.read(key: 'personal_wallet_id');
+  }
+
+  Future<String?> getMerchantWalletId() async {
+    return await _storage.read(key: 'merchant_wallet_id');
+  }
+
+  // ✅ Save wallet info separately for personal and merchant
+  Future<void> saveWalletInfo(Map<String, dynamic> walletJson, String type) async {
+    // type should be 'personal' or 'merchant'
+    await _storage.write(key: 'wallet_info_$type', value: jsonEncode(walletJson));
+
+    // ✅ also store wallet_id separately
+    if (walletJson['id'] != null) {
+      await _storage.write(
+        key: '${type}_wallet_id',
+        value: walletJson['id'].toString(),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>?> getWalletInfo(String type) async {
+    final jsonStr = await _storage.read(key: 'wallet_info_$type');
     if (jsonStr == null) return null;
     return jsonDecode(jsonStr) as Map<String, dynamic>;
   }
 
-  // 🧹 Clear all storage (e.g., on logout)
+  // 💾 Save transactions
+  Future<void> saveTransactions(List<Map<String, dynamic>> txList) async {
+    await _storage.write(key: 'transactions', value: jsonEncode(txList));
+  }
+
+  Future<List<Map<String, dynamic>>> getTransactions() async {
+    final jsonStr = await _storage.read(key: 'transactions');
+    if (jsonStr == null) return [];
+    final decoded = jsonDecode(jsonStr);
+    return List<Map<String, dynamic>>.from(decoded);
+  }
+
+  // 🧹 Clear all
   Future<void> clearAll() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    await _storage.deleteAll();
+  }
+
+  // ✅ Update specific wallet balance
+  Future<void> updateWalletBalance(String type, double change) async {
+    final wallet = await getWalletInfo(type);
+    if (wallet == null) return;
+
+    double currentBalance = (wallet['balance'] as num).toDouble();
+    double newBalance = currentBalance + change;
+    wallet['balance'] = newBalance;
+
+    await saveWalletInfo(wallet, type);
   }
 }
